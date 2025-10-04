@@ -1,0 +1,248 @@
+{
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "82AE80C2",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "29.99",
+      "familyShareable" : false,
+      "internalID" : "6751707332",
+      "localizations" : [
+        {
+          "description" : "Pro access to all features",
+          "displayName" : "Access Lifetime",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "AP004.sub.lifetime.code",
+      "referenceName" : "Lifetime",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "8.99",
+      "familyShareable" : false,
+      "internalID" : "6752992275",
+      "localizations" : [
+        {
+          "description" : "Pro access to all features",
+          "displayName" : "Lifetime",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "AP004.sub.lifetime.code.sale",
+      "referenceName" : "Lifetime Sale",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6751659864",
+    "_askToBuyEnabled" : false,
+    "_billingGracePeriodEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_developerTeamID" : "2H5PN3F9B6",
+    "_disableDialogs" : false,
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 781400544.53234804,
+    "_locale" : "en_US",
+    "_renewalBillingIssuesEnabled" : false,
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+
+    ],
+    "_timeRate" : 0
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21768032",
+      "localizations" : [
+
+      ],
+      "name" : "Subs",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "1.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "6751670881",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Pro access to all features",
+              "displayName" : "Access Month",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "AP004.sub.month.code",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "access month",
+          "subscriptionGroupID" : "21768032",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "2.99",
+          "familyShareable" : false,
+          "groupNumber" : 5,
+          "internalID" : "6752991839",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Pro access to all features",
+              "displayName" : "Access Month",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "AP004.sub.month.code.sale",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "access month sale",
+          "subscriptionGroupID" : "21768032",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "0.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6751670800",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Pro access to all features",
+              "displayName" : "Access Week",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "AP004.sub.week.code",
+          "recurringSubscriptionPeriod" : "P1W",
+          "referenceName" : "access week",
+          "subscriptionGroupID" : "21768032",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "0.99",
+          "familyShareable" : false,
+          "groupNumber" : 4,
+          "internalID" : "6752991611",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Pro access to all features",
+              "displayName" : "Access Week",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "AP004.sub.week.code.sale",
+          "recurringSubscriptionPeriod" : "P1W",
+          "referenceName" : "access week sale",
+          "subscriptionGroupID" : "21768032",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "9.99",
+          "familyShareable" : false,
+          "groupNumber" : 3,
+          "internalID" : "6751670939",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Pro access to all features",
+              "displayName" : "Access Year",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "AP004.sub.year.code",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "access year",
+          "subscriptionGroupID" : "21768032",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "5.99",
+          "familyShareable" : false,
+          "groupNumber" : 6,
+          "internalID" : "6752992073",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Pro access to all features",
+              "displayName" : "Access Year",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "AP004.sub.year.code.sale",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "access year sale",
+          "subscriptionGroupID" : "21768032",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
