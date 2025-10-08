@@ -1,10 +1,3 @@
-//
-//  ExamplesApp.swift
-//  Examples
-//
-//  Created by Computer on 10/6/25.
-//
-
 import SwiftUI
 import SwiftStore
 
@@ -12,22 +5,23 @@ import SwiftStore
 struct ExamplesApp: App {
     
     init() {
-        let subscriptionIDs = [
-            "AP004.sub.week.code",
-            "AP004.sub.month.code",
-            "AP004.sub.year.code"
-        ]
-        let lifetimeIDs = [
-            "AP004.sub.lifetime.code"
-        ]
+        //        let subscriptionIDs = [
+        //            "AP004.sub.week.code",
+        //            "AP004.sub.month.code",
+        //            "AP004.sub.year.code"
+        //        ]
+        //        let lifetimeIDs = [
+        //            "AP004.sub.lifetime.code"
+        //        ]
         
         let configuration = SSConfiguration()
-            .setLifetimeIDs(lifetimeIDs)
-            .setSubscriptionIDs(subscriptionIDs)
-            .setTermsURL("https://github.com/RevenueCat")
-            .setPrivacyURL("https://github.com/RevenueCat")
+            .setLifetimeIDs(Constants.lifetimeIDs)
+            .setSubscriptionIDs(Constants.subscriptionIDs)
+            .setTermsURL(Constants.termsString)
+            .setPrivacyURL(Constants.privacyString)
         
-        SwiftStore.shared.initialize(configuration: configuration)
+        SwiftStore.shared
+            .initialize(configuration: configuration)
     }
     
     var body: some Scene {

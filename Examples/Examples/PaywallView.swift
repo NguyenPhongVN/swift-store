@@ -18,7 +18,7 @@ struct PaywallView: View {
     
     var body: some View {
         SubscriptionStoreView(
-            groupID: "21768032",
+            groupID: Constants.groupID,
             visibleRelationships: ssState.isPremium ? .upgrade : .all) {
             PassMarketingContent()
 #if !os(watchOS)
