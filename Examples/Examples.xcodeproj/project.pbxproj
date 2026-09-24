@@ -366,9 +366,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		9A75A76C2E93396E00693893 /* XCLocalSwiftPackageReference "../../swift-store" */ = {
+		9A75A76C2E93396E00693893 /* XCLocalSwiftPackageReference ".." */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = "../../swift-store";
+			relativePath = "..";
 		};
 /* End XCLocalSwiftPackageReference section */
 
