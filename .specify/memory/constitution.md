@@ -35,7 +35,8 @@ Documentation and doc comments MUST reference only members that exist and MUST d
 
 ## Development Workflow
 
-- Features and bug fixes follow the Spec Kit flow: `/speckit-specify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-implement`, with `/speckit-analyze` before implementation when the change touches entitlement logic.
+- **Automatic Spec Kit execution (standing order)**: Every development task the user assigns — new feature, bug fix, or behavioral change — MUST be implemented through the full Spec Kit flow: `/speckit-specify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-implement`, with `/speckit-analyze` before implementation when the change touches entitlement logic. The agent runs all phases back-to-back **automatically, without pausing to ask between phases**: the user states the task once and receives the finished, verified result (code changed, builds green, gates run, tasks checked off). This applies whether or not the user names a speckit command explicitly. Non-development requests (questions, reviews, commits, quick lookups) do not trigger the flow. The user may explicitly opt out per task (e.g., "fix directly", "hotfix") — record the opt-out in the tasks notes.
+- **Direct work on `main` — no feature branches (standing order)**: All development happens **directly on the `main` branch**. Creating git branches for tasks (feature branches, per-task branches) is NOT allowed. `Feature Branch:` fields in existing `specs/*/` documents are historical records only, not instructions for future work. This is a deliberate standing order from the user (2026-09-24) and overrides any branch-first default.
 - Every change MUST leave the package and the example app building with zero errors before completion.
 - Every change touching the library MUST verify Principle I: diff the public interface; zero unapproved removals or signature changes.
 - Bug fixes MUST map to a requirement in the feature spec (FR-xxx) and a success criterion; a fix without a testable acceptance scenario is incomplete.
@@ -47,4 +48,9 @@ Documentation and doc comments MUST reference only members that exist and MUST d
 - Reviewers (human or agent) MUST verify constitution compliance before approving any change.
 - Use the Spec Kit guidance files for runtime development guidance; when guidance conflicts with this constitution, this constitution wins.
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-24 | **Last Amended**: 2026-09-24
+**Version**: 1.2.0 | **Ratified**: 2026-09-24 | **Last Amended**: 2026-09-24
+
+**Amendment log**:
+- v1.2.0 (2026-09-24): Added standing order — all development happens directly on `main`; creating git feature/per-task branches is not allowed. Reason: user preference for a linear history on a single branch; checked that no open spec/task depends on a branch-based workflow (existing `Feature Branch:` fields are historical metadata only).
+- v1.1.0 (2026-09-24): Added standing order — all user-assigned development tasks run the full Spec Kit flow automatically, end to end, without per-phase confirmation.
+- v1.0.0 (2026-09-24): Initial ratification with six core principles.
