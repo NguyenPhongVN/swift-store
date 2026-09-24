@@ -1,8 +1,7 @@
 import SwiftUI
 import StoreKit
 
-#Preview("SubscriptionStoreView") {
-    
+#Preview("SubscriptionStoreView — all relationships") {
     SubscriptionStoreView(groupID: Constants.groupID, visibleRelationships: .all) {
         MarketingPaywallContent()
         
@@ -39,7 +38,7 @@ import StoreKit
     .subscriptionStorePickerItemBackground(.thinMaterial)
 }
 
-#Preview("SubscriptionStoreView") {
+#Preview("SubscriptionStoreView — upgrade") {
     SubscriptionStoreView(groupID: Constants.groupID, visibleRelationships: .upgrade) {
         MarketingPaywallContent()
             .foregroundStyle(.white)
@@ -49,7 +48,7 @@ import StoreKit
     .subscriptionStoreControlStyle(.prominentPicker)
 }
 
-#Preview("SubscriptionStoreView") {
+#Preview("SubscriptionStoreView — current + sign-in") {
     @Previewable @State var showingSignIn = false
     SubscriptionStoreView(groupID:  Constants.groupID, visibleRelationships: .current) {
         MarketingPaywallContent()

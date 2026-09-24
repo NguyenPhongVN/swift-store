@@ -83,7 +83,7 @@ extension SubscriptionStoreControlStyle where Self == CustomSubscriptionStoreCon
     static var priceComparisonButtons: Self { Self() }
 }
 
-#Preview {
+#Preview("price comparison buttons") {
     VStack {
         Text("Choose your plan")
             .font(.title2.bold())
@@ -99,7 +99,7 @@ extension SubscriptionStoreControlStyle where Self == CustomSubscriptionStoreCon
     
 }
 
-#Preview {
+#Preview("prominent picker") {
     SubscriptionStoreView(productIDs: Constants.products) {
         MarketingPaywallContent()
     }

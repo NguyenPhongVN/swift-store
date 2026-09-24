@@ -8,7 +8,7 @@ struct SpinnerWhenLoadingStyle: ProductViewStyle {
     @State private var pulseScale: CGFloat = 1.0
     @State private var isPressed = false
     @State private var showSuccessAnimation = false
-    
+
     func makeBody(configuration: Configuration) -> some View {
         //        let state: Product.TaskState = .loading
         let state = configuration.state
@@ -34,7 +34,7 @@ struct SpinnerWhenLoadingStyle: ProductViewStyle {
                                 .repeatForever(autoreverses: false),
                                 value: rotationAngle
                             )
-                        
+
                         // Inner pulsing circle
                         Circle()
                             .fill(
@@ -52,14 +52,14 @@ struct SpinnerWhenLoadingStyle: ProductViewStyle {
                                 value: pulseScale
                             )
                     }
-                    
+
                     // Loading Text with Typography
                     VStack(spacing: 4) {
                         Text("Loading Product")
                             .font(.headline)
                             .fontWeight(.semibold)
                             .foregroundStyle(.primary)
-                        
+
                         Text("Fetching the latest details...")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -68,27 +68,12 @@ struct SpinnerWhenLoadingStyle: ProductViewStyle {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 24)
                 .padding(.horizontal, 20)
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(.ultraThinMaterial)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [.blue.opacity(0.2), .purple.opacity(0.2)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 1
-                                )
-                        )
-                )
-                .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                .spinnerCardBackground()
                 .onAppear {
                     rotationAngle = 360
                     pulseScale = 1.2
                 }
-                
+
             case .success(let product):
                 VStack(spacing: 20) {
                     HStack(spacing: 16) {
@@ -102,10 +87,10 @@ struct SpinnerWhenLoadingStyle: ProductViewStyle {
                                         endPoint: .bottomTrailing
                                     )
                                 )
-                                
+
                                 .scaleEffect(showSuccessAnimation ? 1.1 : 1.0)
                                 .animation(.easeInOut(duration: 0.6).delay(0.2), value: showSuccessAnimation)
-                            
+
                             configuration.icon
                                 .font(.title2)
                                 .foregroundStyle(
@@ -127,7 +112,7 @@ struct SpinnerWhenLoadingStyle: ProductViewStyle {
                                 .opacity(showSuccessAnimation ? 1 : 0)
                                 .offset(y: showSuccessAnimation ? 0 : 10)
                                 .animation(.easeOut(duration: 0.5).delay(0.4), value: showSuccessAnimation)
-                            
+
                             Text(product.description)
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
@@ -137,9 +122,9 @@ struct SpinnerWhenLoadingStyle: ProductViewStyle {
                                 .offset(y: showSuccessAnimation ? 0 : 10)
                                 .animation(.easeOut(duration: 0.5).delay(0.6), value: showSuccessAnimation)
                         }
-                        
+
                         Spacer()
-                        
+
                         // Price with Badge
                         VStack(alignment: .trailing, spacing: 6) {
                             Text(product.displayPrice)
@@ -159,21 +144,7 @@ struct SpinnerWhenLoadingStyle: ProductViewStyle {
                     }
                 }
                 .padding(24)
-                .background(
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(.ultraThinMaterial)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 24)
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [.green.opacity(0.3), .mint.opacity(0.3)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 1
-                                )
-                        )
-                )
+                .spinnerCardBackground(cornerRadius: 24, strokeColors: [.green.opacity(0.3), .mint.opacity(0.3)])
                 .shadow(color: .black.opacity(0.1), radius: 15, x: 0, y: 8)
                 .shadow(color: .green.opacity(0.1), radius: 20, x: 0, y: 10)
                 .onAppear {
@@ -181,102 +152,63 @@ struct SpinnerWhenLoadingStyle: ProductViewStyle {
                         showSuccessAnimation = true
                     }
                 }
-                
+
             case .failure(let error):
-                VStack(spacing: 16) {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [.orange.opacity(0.2), .red.opacity(0.2)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 60, height: 60)
-                        
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.title2)
-                            .foregroundStyle(.orange)
-                    }
-                    
-                    VStack(spacing: 8) {
-                        Text("Unable to Load Product")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                        
-                        Text(error.localizedDescription)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    
-                    Button("Retry") {
-                        // Retry logic would be handled by the parent view
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                }
-                .padding(24)
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(.ultraThinMaterial)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(.orange.opacity(0.3), lineWidth: 1)
-                        )
+                StatusCard(
+                    iconName: "exclamationmark.triangle.fill",
+                    iconTint: .orange,
+                    circleGradientColors: [.orange.opacity(0.2), .red.opacity(0.2)],
+                    title: "Unable to Load Product",
+                    message: error.localizedDescription,
+                    showsRetry: true,
+                    accentColor: .orange
                 )
-                .shadow(color: .orange.opacity(0.2), radius: 15, x: 0, y: 8)
-                
+
             case .unavailable:
-                VStack(spacing: 16) {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [.red.opacity(0.2), .pink.opacity(0.2)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 60, height: 60)
-                        
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(.red)
-                    }
-                    
-                    VStack(spacing: 8) {
-                        Text("Product Unavailable")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                        
-                        Text("This product is currently not available for purchase.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                }
-                .padding(24)
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(.ultraThinMaterial)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(.red.opacity(0.3), lineWidth: 1)
-                        )
+                StatusCard(
+                    iconName: "xmark.circle.fill",
+                    iconTint: .red,
+                    circleGradientColors: [.red.opacity(0.2), .pink.opacity(0.2)],
+                    title: "Product Unavailable",
+                    message: "This product is currently not available for purchase.",
+                    accentColor: .red
                 )
-                .shadow(color: .red.opacity(0.2), radius: 15, x: 0, y: 8)
-                
+
             @unknown default:
                 ProductView(configuration)
         }
     }
 }
 
+// MARK: - Shared Card Styling
+
+private extension View {
+    /// Material card background shared by this style's states. The loading
+    /// state uses the defaults; the success state overrides corner radius and
+    /// stroke colors.
+    func spinnerCardBackground(cornerRadius: CGFloat = 20, strokeColors: [Color] = [.blue.opacity(0.2), .purple.opacity(0.2)]) -> some View {
+        background(
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .stroke(
+                            LinearGradient(
+                                colors: strokeColors,
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+        )
+        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+    }
+}
+
 #Preview("Spinner Loading Style") {
     VStack(spacing: 16) {
-        
+
         // Multiple Products Preview
         VStack(spacing: 12) {
             ForEach(Array(Constants.products.enumerated()), id: \.offset) { offset, id in

@@ -1,7 +1,11 @@
 import SwiftUI
 import StoreKit
 
+/// Showcases the demo's product views: a StoreView with custom card styling.
 struct PreviewView: View {
+
+    // MARK: - Body
+
     var body: some View {
         ScrollView {
             VStack {

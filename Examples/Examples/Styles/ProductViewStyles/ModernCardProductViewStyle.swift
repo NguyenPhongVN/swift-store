@@ -5,7 +5,7 @@ import StoreKit
 /// Features gradient backgrounds, sophisticated shadows, and smooth animations
 struct ModernCardProductViewStyle: ProductViewStyle {
     @State private var isPressed = false
-    
+
     func makeBody(configuration: Configuration) -> some View {
 //        let state: Product.TaskState = .loading
         let state = configuration.state
@@ -16,7 +16,7 @@ struct ModernCardProductViewStyle: ProductViewStyle {
                         .progressViewStyle(.circular)
                         .scaleEffect(1.2)
                         .tint(.blue)
-                    
+
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Loading product...")
                             .font(.headline)
@@ -29,29 +29,8 @@ struct ModernCardProductViewStyle: ProductViewStyle {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 24)
                 .padding(.horizontal, 20)
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(
-                            LinearGradient(
-                                colors: [.blue.opacity(0.1), .purple.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [.blue.opacity(0.3), .purple.opacity(0.3)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 1
-                                )
-                        )
-                )
-                .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
-                
+                .demoCardBackground()
+
             case .success(let product):
                 VStack(alignment: .leading, spacing: 20) {
                     HStack(spacing: 20) {
@@ -81,16 +60,16 @@ struct ModernCardProductViewStyle: ProductViewStyle {
                                 .fontWeight(.bold)
                                 .foregroundStyle(.primary)
                                 .multilineTextAlignment(.leading)
-                            
+
                             Text(product.description)
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(3)
                                 .multilineTextAlignment(.leading)
                         }
-                        
+
                         Spacer()
-                        
+
                         // Enhanced Price with Badge Design
                         VStack(alignment: .trailing, spacing: 4) {
                             Text(product.displayPrice)
@@ -103,7 +82,7 @@ struct ModernCardProductViewStyle: ProductViewStyle {
                                         endPoint: .bottomTrailing
                                     )
                                 )
-                            
+
                             Text("Premium")
                                 .font(.caption)
                                 .fontWeight(.semibold)
@@ -124,28 +103,7 @@ struct ModernCardProductViewStyle: ProductViewStyle {
                     }
                 }
                 .padding()
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(
-                            LinearGradient(
-                                colors: [.blue.opacity(0.1), .purple.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [.blue.opacity(0.3), .purple.opacity(0.3)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 1
-                                )
-                        )
-                )
-                .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                .demoCardBackground()
                 .scaleEffect(isPressed ? 0.98 : 1.0)
                 .animation(.easeInOut(duration: 0.1), value: isPressed)
                 .onTapGesture {
@@ -160,131 +118,67 @@ struct ModernCardProductViewStyle: ProductViewStyle {
                 }
 
             case .failure(let error):
-                VStack(spacing: 16) {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [.orange.opacity(0.2), .red.opacity(0.2)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 60, height: 60)
-                        
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.title2)
-                            .foregroundStyle(.orange)
-                    }
-                    
-                    VStack(spacing: 8) {
-                        Text("Unable to Load Product")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                        
-                        Text(error.localizedDescription)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    
-                    Button("Retry") {
-                        // Retry logic would be handled by the parent view
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                }
-                .padding(24)
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(.ultraThinMaterial)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(.orange.opacity(0.3), lineWidth: 1)
-                        )
+                StatusCard(
+                    iconName: "exclamationmark.triangle.fill",
+                    iconTint: .orange,
+                    circleGradientColors: [.orange.opacity(0.2), .red.opacity(0.2)],
+                    title: "Unable to Load Product",
+                    message: error.localizedDescription,
+                    showsRetry: true,
+                    accentColor: .orange
                 )
-                .shadow(color: .orange.opacity(0.2), radius: 15, x: 0, y: 8)
-                
+
             case .unavailable:
-                VStack(spacing: 16) {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [.red.opacity(0.2), .pink.opacity(0.2)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 60, height: 60)
-                        
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(.red)
-                    }
-                    
-                    VStack(spacing: 8) {
-                        Text("Product Unavailable")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                        
-                        Text("This product is currently not available for purchase.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                }
-                .padding(24)
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(.ultraThinMaterial)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(.red.opacity(0.3), lineWidth: 1)
-                        )
+                StatusCard(
+                    iconName: "xmark.circle.fill",
+                    iconTint: .red,
+                    circleGradientColors: [.red.opacity(0.2), .pink.opacity(0.2)],
+                    title: "Product Unavailable",
+                    message: "This product is currently not available for purchase.",
+                    accentColor: .red
                 )
-                .shadow(color: .red.opacity(0.2), radius: 15, x: 0, y: 8)
-                
+
             @unknown default:
-                VStack(spacing: 16) {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [.gray.opacity(0.2), .secondary.opacity(0.2)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 60, height: 60)
-                        
-                        Image(systemName: "questionmark.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(.gray)
-                    }
-                    
-                    VStack(spacing: 8) {
-                        Text("Unknown State")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                        
-                        Text("An unexpected state occurred while loading the product.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                }
-                .padding(24)
-                .background(
+                StatusCard(
+                    iconName: "questionmark.circle.fill",
+                    iconTint: .gray,
+                    circleGradientColors: [.gray.opacity(0.2), .secondary.opacity(0.2)],
+                    title: "Unknown State",
+                    message: "An unexpected state occurred while loading the product.",
+                    accentColor: .gray
+                )
+        }
+    }
+}
+
+// MARK: - Shared Card Styling
+
+private extension View {
+    /// Gradient fill + stroke card background shared by the loading and
+    /// success states of this style.
+    func demoCardBackground() -> some View {
+        background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(
+                    LinearGradient(
+                        colors: [.blue.opacity(0.1), .purple.opacity(0.1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .fill(.ultraThinMaterial)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(.gray.opacity(0.3), lineWidth: 1)
+                        .stroke(
+                            LinearGradient(
+                                colors: [.blue.opacity(0.3), .purple.opacity(0.3)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
                         )
                 )
-                .shadow(color: .gray.opacity(0.2), radius: 15, x: 0, y: 8)
-        }
+        )
+        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
     }
 }
 

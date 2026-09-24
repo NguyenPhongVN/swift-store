@@ -8,7 +8,6 @@ import StoreKit
     .productViewStyle(.compact)
     .padding()
     .background(.thinMaterial, in: .rect(cornerRadius: 20))
-    .productViewStyle(.compact)
     .foregroundColor(.black)
     .padding(.horizontal)
 }
@@ -20,16 +19,14 @@ import StoreKit
     .productViewStyle(.regular)
     .padding()
     .background(.thinMaterial, in: .rect(cornerRadius: 20))
-    .productViewStyle(.compact)
     .foregroundColor(.black)
     .padding(.horizontal)
 }
 
-#Preview("regular") {
+#Preview("regular — large style") {
     ProductView(id: Constants.productId) {
         ProductImage(productId: Constants.productId)
     }
-    .productViewStyle(.regular)
     .padding()
     .background(.thinMaterial, in: .rect(cornerRadius: 20))
     .productViewStyle(.large)
@@ -37,7 +34,7 @@ import StoreKit
     .padding(.horizontal)
 }
 
-#Preview("ProductView onInAppPurchase") {
+#Preview("onInAppPurchase") {
     ProductView(id: Constants.productId) {
         Image(systemName: "crown")
     }
@@ -65,7 +62,7 @@ import StoreKit
             ProgressView()
         }
         .productViewStyle(.large)
-        
+
         VStack(spacing: 16) {
             ForEach(Constants.products, id: \.self) { id in
                 ProductView(id: id)

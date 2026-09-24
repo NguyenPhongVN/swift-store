@@ -9,7 +9,9 @@ struct PurchaseExample: View {
     
     var body: some View {
         Button {
-            Task {
+            // The purchase outcome is handled inside the task; the task handle
+            // is intentionally discarded.
+            _ = Task {
                 let purchaseResult = try await purchase(product, options: purchaseOptions)
                 // Process the purchase result.
                 switch purchaseResult {
