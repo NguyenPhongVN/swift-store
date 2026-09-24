@@ -5,17 +5,6 @@ import StoreKit
 import UIKit
 #endif
 
-/// Internal marker for the pipeline that delivered a transaction. Distinguishes
-/// live purchases from entitlement syncs when choosing the event to emit.
-enum DeliverySource {
-    /// `Transaction.updates` — live purchases and renewals.
-    case liveUpdates
-    /// `Transaction.currentEntitlements` — entitlement sync.
-    case currentEntitlements
-    /// `Transaction.unfinished` — interrupted transactions completing.
-    case unfinished
-}
-
 /// Main store class for handling in-app purchases and subscription management
 ///
 /// `SwiftStore` is a singleton class that provides a simple interface for managing
@@ -24,7 +13,8 @@ enum DeliverySource {
 /// state updates using StoreKit 2.
 ///
 /// ## Features
-/// - **Automatic Transaction Handling**: Processes unfinished and current entitlements
+/// - **Automatic Transaction Handling**: One per-process pipeline verifies and
+///   completes platform transactions, fanning outcomes out to every instance
 /// - **Real-time Updates**: Monitors transaction updates and updates state accordingly
 /// - **Premium Status Tracking**: Provides easy access to premium subscription status
 /// - **Observability**: Subscribe to `onEvent` for entitlement, purchase, and failure events
@@ -34,10 +24,10 @@ enum DeliverySource {
 /// ## Usage
 /// ```swift
 /// // Initialize with configuration
-/// let configuration = SSConfiguration()
-/// configuration.subscriptionIDs = ["monthly_premium"]
-/// configuration.lifetimeIDs = ["lifetime_premium"]
-/// SwiftStore.shared.initialize(configuration: configuration)
+/// SwiftStore.shared.initialize {
+///     $0.subscriptionIDs = ["monthly_premium"]
+///     $0.lifetimeIDs = ["lifetime_premium"]
+/// }
 ///
 /// // Check premium status
 /// if SwiftStore.shared.isPremium {
@@ -82,7 +72,7 @@ public final class SwiftStore {
     ///
     /// This URL is set through the configuration and can be used to
     /// display terms of service links in your app's UI.
-    /// Returns `nil` before `initialize(configuration:)` is called.
+    /// Returns `nil` before `initialize` is called.
     public var termsURL: String? {
         configuration?.termsURL
     }
@@ -91,7 +81,7 @@ public final class SwiftStore {
     ///
     /// This URL is set through the configuration and can be used to
     /// display privacy policy links in your app's UI.
-    /// Returns `nil` before `initialize(configuration:)` is called.
+    /// Returns `nil` before `initialize` is called.
     public var privacyURL: String? {
         configuration?.privacyURL
     }
@@ -116,7 +106,7 @@ public final class SwiftStore {
 
     /// Combined array of all configured product identifiers
     ///
-    /// Returns an empty array before `initialize(configuration:)` is called.
+    /// Returns an empty array before `initialize` is called.
     public var productIDs: [String] {
         configuration?.productIDs ?? []
     }
@@ -131,7 +121,7 @@ public final class SwiftStore {
     /// Whether this instance has been initialized with a configuration.
     ///
     /// Read-only accessors remain usable before initialization and return
-    /// safe defaults; see `initialize(configuration:)`.
+    /// safe defaults; see `initialize`.
     public var isInitialized: Bool {
         return hasBeenInitialized
     }
@@ -140,18 +130,20 @@ public final class SwiftStore {
 
     /// Internal configuration object containing product IDs and settings
     ///
-    /// `nil` until `initialize(configuration:)` is called; accessors return safe
+    /// `nil` until `initialize` is called; accessors return safe
     /// defaults instead of crashing when the store has not been initialized.
     private var configuration: SSConfiguration?
 
-    /// Whether `initialize(configuration:)` has already started its monitoring tasks
+    /// Whether `initialize` has already registered this instance with the
+    /// transaction pipeline.
     ///
-    /// `Transaction.updates` is an infinite sequence, so initialization must only
-    /// start it once even if `initialize` is called repeatedly.
+    /// The pipeline's delivery loops start once per process; registration
+    /// must only happen once even if `initialize` is called repeatedly.
     private var hasBeenInitialized = false
 
-    /// Guards against overlapping restore operations (duplicate system prompts).
-    private var isRestoringPurchases = false
+    /// In-flight restore task, shared by overlapping restore calls so a
+    /// second caller awaits the same truthful outcome instead of re-prompting.
+    private var restoreInFlight: Task<RestoreOutcome, Error>?
 
     // MARK: - Initialization
 
@@ -159,7 +151,8 @@ public final class SwiftStore {
     ///
     /// Most apps use `shared`. Create separate instances for tests, previews,
     /// or isolated store environments; every instance keeps its own
-    /// configuration, entitlement state, and event slot.
+    /// configuration, entitlement state, and event slot. Platform transaction
+    /// monitoring runs once per process and fans outcomes out to all instances.
     public init() {
     }
 
@@ -172,15 +165,45 @@ public final class SwiftStore {
 
     // MARK: - Public Methods
 
+    /// Initializes the SwiftStore by assembling a configuration in a closure.
+    ///
+    /// The closure runs synchronously on the main actor with a fresh
+    /// configuration, so nothing non-sendable ever crosses an actor boundary —
+    /// convenient for apps built with strict concurrency checking. Capture
+    /// only sendable values (strings, arrays) into the closure.
+    ///
+    /// Calling `initialize` again is safe: the configuration is refreshed, but
+    /// the instance is only registered with the transaction pipeline once, so
+    /// no duplicate processing occurs.
+    ///
+    /// - Parameter configure: A closure that populates a fresh configuration.
+    /// - Returns: The SwiftStore instance for method chaining
+    ///
+    /// ## Example
+    /// ```swift
+    /// SwiftStore.shared.initialize {
+    ///     $0.setSubscriptionIDs(["monthly_premium", "yearly_premium"])
+    ///     $0.setLifetimeIDs(["lifetime_premium"])
+    ///     $0.setTermsURL("https://yourapp.com/terms")
+    ///     $0.setPrivacyURL("https://yourapp.com/privacy")
+    /// }
+    /// ```
+    @discardableResult
+    public func initialize(_ configure: (SSConfiguration) -> Void) -> SwiftStore {
+        let configuration = SSConfiguration()
+        configure(configuration)
+        return initialize(configuration: configuration)
+    }
+
     /// Initializes the SwiftStore with the provided configuration
     ///
     /// This method must be called before using any other SwiftStore functionality.
-    /// It sets up the configuration and starts monitoring for transaction updates.
-    /// Calling it again is safe: the configuration is refreshed, but the transaction
-    /// monitoring tasks are only started on the first call, so no duplicate
-    /// processing occurs.
+    /// It sets up the configuration and registers the instance with the
+    /// per-process transaction pipeline. Calling it again is safe: the
+    /// configuration is refreshed, but registration happens only once, so no
+    /// duplicate processing occurs.
     ///
-    /// The initialization process includes:
+    /// The registration process includes:
     /// - Setting up the configuration with product IDs and URLs
     /// - Processing any unfinished transactions from previous app sessions
     /// - Fetching current entitlements for all configured products
@@ -205,25 +228,7 @@ public final class SwiftStore {
         guard !hasBeenInitialized else { return self }
         hasBeenInitialized = true
 
-        // Because the tasks below capture 'self' in their closures, this object must be fully initialized before this point.
-        Task(priority: .background) {
-            // Finish any unfinished transactions -- for example, if the app was terminated before finishing a transaction.
-            for await verificationResult in Transaction.unfinished {
-                await handle(updatedTransaction: verificationResult, source: .unfinished)
-            }
-
-            // Fetch current entitlements for all product types except consumables.
-            for await verificationResult in Transaction.currentEntitlements {
-                await handle(updatedTransaction: verificationResult, source: .currentEntitlements)
-            }
-        }
-        Task(priority: .background) {
-            for await verificationResult in Transaction.updates {
-                await handle(updatedTransaction: verificationResult, source: .liveUpdates)
-            }
-        }
-
-
+        TransactionPipeline.shared.register(self)
         return self
     }
 
@@ -231,7 +236,7 @@ public final class SwiftStore {
     /// given product — an active lifetime purchase or the recorded active
     /// subscription.
     ///
-    /// Returns `false` before `initialize(configuration:)` is called.
+    /// Returns `false` before `initialize` is called.
     public func hasEntitlement(_ id: ProductID) -> Bool {
         guard let configuration else { return false }
         if activeLifeTime, configuration.lifetimeIDs.contains(id.rawValue) {
@@ -240,17 +245,42 @@ public final class SwiftStore {
         return activeSubscription == id.rawValue
     }
 
+    /// Restores previously completed purchases and reports the outcome.
+    ///
+    /// - Returns: `.restored(count:)` when the account holds verified
+    ///   entitlements after the restore (count = total active entitlements,
+    ///   not a delta), or `.nothingToRestore` when it holds none.
+    /// - Throws: When the platform restore fails (for example, offline). No
+    ///   success event is emitted on failure.
+    ///
+    /// Completion also emits the existing `.restoreFinished` event. Overlapping
+    /// calls await the same in-flight restore instead of re-prompting.
+    public func restore() async throws -> RestoreOutcome {
+        if let restoreInFlight {
+            return try await restoreInFlight.value
+        }
+        let task = Task { () throws -> RestoreOutcome in
+            try await AppStore.sync()
+            defer { self.restoreInFlight = nil }
+            let count = await Self.countVerifiedEntitlements()
+            let outcome = RestoreOutcome.fromEntitlementCount(count)
+            self.emit(.restoreFinished)
+            return outcome
+        }
+        restoreInFlight = task
+        return try await task.value
+    }
+
     /// Restores previously completed purchases.
     ///
     /// Completion — including when there is nothing to restore — is reported as
     /// a `.restoreFinished` event. Rapid repeat calls while a restore is already
     /// in flight are no-ops, avoiding duplicate system prompts.
+    ///
+    /// Prefer `restore()` when you need to distinguish success, an empty
+    /// account, or failure.
     public func restorePurchases() async {
-        guard !isRestoringPurchases else { return }
-        isRestoringPurchases = true
-        defer { isRestoringPurchases = false }
-        try? await AppStore.sync()
-        emit(.restoreFinished)
+        _ = try? await restore()
     }
 
 #if os(iOS)
@@ -266,93 +296,89 @@ public final class SwiftStore {
     }
 #endif
 
-    // MARK: - Private Methods
+    // MARK: - Pipeline Application
 
-    /// Handles transaction updates and updates the store state accordingly
+    /// Applies a pipeline outcome to this instance: classification runs against
+    /// this instance's own configuration, so isolated instances stay isolated.
     ///
-    /// This method processes StoreKit transaction verification results and updates
-    /// the appropriate store properties based on the transaction type and status.
-    /// It handles these scenarios:
-    ///
-    /// 1. **Unverified Transactions**: Ignored entirely — no entitlement change and no
-    ///    finish call, so untrusted content is never acknowledged (secure default).
-    ///    A `.transactionUnverified` event is emitted.
-    /// 2. **Revoked Transactions**: Removes access only to the product identified by
-    ///    `transaction.productID`, finishes the transaction whether or not the
-    ///    product is recognized, and emits `.entitlementChanged`.
-    /// 3. **Expired Subscriptions**: Deactivates the recorded subscription only when
-    ///    the expired transaction belongs to the product currently recorded as active;
-    ///    emits `.entitlementChanged` when state changes.
-    /// 4. **Valid Transactions**: Activates lifetime purchases or subscriptions.
-    ///    Verified transactions for unrecognized products grant no entitlement but
-    ///    are still finished to prevent indefinite re-delivery (no event — nothing
-    ///    changed). A verified first purchase on the live pipeline emits
-    ///    `.purchaseFinished`; other valid deliveries emit `.entitlementChanged`.
-    ///
-    /// State changes are scoped to the transaction's own product: an expired or revoked
-    /// delivery can never clear another product's entitlement, so the final state does
-    /// not depend on transaction delivery order. Events are observation-only — they
-    /// never alter state or completion decisions.
-    ///
-    /// - Parameters:
-    ///   - verificationResult: The StoreKit transaction verification result
-    ///   - source: The pipeline that delivered the transaction
-    private func handle(updatedTransaction verificationResult: VerificationResult<Transaction>, source: DeliverySource) async {
-        // Transactions that fail verification are intentionally ignored and not finished:
-        // their contents are untrusted and must not grant entitlements or be acknowledged.
-        guard case .verified(let transaction) = verificationResult else {
+    /// Called by the transaction pipeline on the main actor.
+    func apply(outcome: PipelineOutcome) {
+        switch outcome {
+        case .unverified:
             emit(.transactionUnverified)
-            return
+        case .verified(let facts):
+            apply(facts)
         }
+    }
 
-        let classification = configuration?.classify(transaction.productID) ?? .unrecognized
+    /// Applies verified transaction facts to entitlement state.
+    ///
+    /// Clearing rules are product-scoped: an expired or revoked delivery can
+    /// never clear another product's entitlement. A subscription within the
+    /// platform's billing grace period (or in billing retry) is retained even
+    /// though its expiration date has passed; access is removed only when the
+    /// grace protection lapses.
+    private func apply(_ facts: TransactionFacts) {
+        let classification = configuration?.classify(facts.productID) ?? .unrecognized
 
-        if transaction.revocationDate != nil {
-            // Remove access to the product identified by `transaction.productID`.
-            // `Transaction.revocationReason` provides details about the revoked transaction.
+        if facts.isRevoked {
+            // Remove access to the product identified by `facts.productID`.
             if classification == .lifetime {
                 activeLifeTime = false
-                await transaction.finish()
-                emit(.entitlementChanged(productID: transaction.productID, isActive: false))
-            } else if classification == .subscription, activeSubscription == transaction.productID {
+                emit(.entitlementChanged(productID: facts.productID, isActive: false))
+            } else if classification == .subscription, activeSubscription == facts.productID {
                 // In an app that supports Family Sharing, there might be another entitlement that still provides access to the subscription.
                 activeSubscription = nil
-                await transaction.finish()
-                emit(.entitlementChanged(productID: transaction.productID, isActive: false))
-            } else {
-                await transaction.finish()
+                emit(.entitlementChanged(productID: facts.productID, isActive: false))
             }
             return
         }
 
-        if let expirationDate = transaction.expirationDate, expirationDate < Date() {
-            // Clear the recorded subscription only when the expired transaction is the
-            // one currently recorded as active; another product's expiry must not
-            // disable a still-valid subscription.
-            if classification == .subscription, activeSubscription == transaction.productID {
+        if facts.isExpired {
+            if facts.isGraceProtected {
+                // The platform still honors the entitlement during billing
+                // retry / grace — retain access and change nothing.
+                return
+            }
+            // Clear the recorded subscription only when the expired transaction
+            // is the one currently recorded as active; another product's expiry
+            // must not disable a still-valid subscription.
+            if classification == .subscription, activeSubscription == facts.productID {
                 activeSubscription = nil
-                emit(.entitlementChanged(productID: transaction.productID, isActive: false))
+                emit(.entitlementChanged(productID: facts.productID, isActive: false))
             }
             return
         }
 
-        let isFreshPurchase = source == .liveUpdates && transaction.reason == .purchase
+        // A verified transaction for an unrecognized product grants no
+        // entitlement here; the pipeline already finished it so the store does
+        // not re-deliver it on every launch. Nothing changed, so no event fires.
+        guard classification != .unrecognized else { return }
+
         switch classification {
         case .lifetime:
             activeLifeTime = true
         case .subscription:
-            activeSubscription = transaction.productID
+            activeSubscription = facts.productID
         case .unrecognized:
-            // A verified transaction for an unrecognized product grants no
-            // entitlement here, but is still finished so the store does not
-            // re-deliver it on every launch. Nothing changed, so no event fires.
-            await transaction.finish()
-            return
+            break
         }
-        await transaction.finish()
-        emit(isFreshPurchase
-             ? .purchaseFinished(productID: transaction.productID)
-             : .entitlementChanged(productID: transaction.productID, isActive: true))
+        emit(facts.isFreshPurchase
+             ? .purchaseFinished(productID: facts.productID)
+             : .entitlementChanged(productID: facts.productID, isActive: true))
+    }
+
+    // MARK: - Private Methods
+
+    /// Counts verified entries in the current entitlement sync.
+    private static func countVerifiedEntitlements() async -> Int {
+        var count = 0
+        for await result in Transaction.currentEntitlements {
+            if case .verified = result {
+                count += 1
+            }
+        }
+        return count
     }
 
     /// Delivers an event to the subscriber, if one is registered.

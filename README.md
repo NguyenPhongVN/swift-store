@@ -306,6 +306,44 @@ SwiftStore automatically monitors transaction updates and updates the state acco
 - Monitor for new transaction updates
 - Update premium status automatically
 
+### Observability & Purchases Pending Approval (Ask to Buy)
+
+Subscribe to store events to observe what the pipeline processes — entitlement changes, first purchases, transactions that failed verification, and restore completion:
+
+```swift
+SwiftStore.shared.onEvent = { event in
+    switch event {
+    case .entitlementChanged(let productID, let isActive):
+        print("Entitlement \(productID) is now \(isActive ? "active" : "inactive")")
+    case .purchaseFinished(let productID):
+        print("Purchase completed: \(productID)")
+    case .transactionUnverified:
+        print("A transaction failed verification and was ignored")
+    case .restoreFinished:
+        print("Restore finished")
+    }
+}
+```
+
+**Ask to Buy**: when a purchase is awaiting approval, the platform surfaces `.pending` through its purchase-time callbacks (for example `onInAppPurchaseResult` on `ProductView`, or the `purchase` environment action). Once the purchase is approved, the transaction arrives through SwiftStore's normal pipeline and is reported as a `purchaseFinished` event. The library intentionally exposes no pre-approval query — the platform does not provide one.
+
+### Restoring Purchases
+
+```swift
+// Distinguishable outcome: success (with entitlement count), empty account,
+// or failure (throws, for example when offline).
+let outcome = try await SwiftStore.shared.restore()
+switch outcome {
+case .restored(let count):
+    print("Restored — \(count) active entitlements")
+case .nothingToRestore:
+    print("Nothing to restore")
+}
+
+// Legacy call: unchanged behavior, reports via the .restoreFinished event only.
+await SwiftStore.shared.restorePurchases()
+```
+
 ## Best Practices
 
 1. **Initialize Early**: Initialize SwiftStore in your app's entry point before any views are created

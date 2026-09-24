@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 100;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -27,11 +27,9 @@
 /* Begin PBXFrameworksBuildPhase section */
 		9A6F1BFF2E93391900D9DED3 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				9A75A76E2E93396E00693893 /* SwiftStore in Frameworks */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
@@ -66,8 +64,6 @@
 			);
 			buildRules = (
 			);
-			dependencies = (
-			);
 			fileSystemSynchronizedGroups = (
 				9A6F1C042E93391900D9DED3 /* Examples */,
 			);
@@ -87,7 +83,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2600;
-				LastUpgradeCheck = 2600;
+				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					9A6F1C012E93391900D9DED3 = {
 						CreatedOnToolsVersion = 26.0.1;
@@ -104,9 +100,9 @@
 			mainGroup = 9A6F1BF92E93391900D9DED3;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				9A75A76C2E93396E00693893 /* XCLocalSwiftPackageReference "../../swift-store" */,
+				9A75A76C2E93396E00693893 /* XCLocalSwiftPackageReference ".." */,
 			);
-			preferredProjectObjectVersion = 77;
+			preferredProjectObjectVersion = 100;
 			productRefGroup = 9A6F1C032E93391900D9DED3 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -119,26 +115,22 @@
 /* Begin PBXResourcesBuildPhase section */
 		9A6F1C002E93391900D9DED3 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				9A75A7702E93399000693893 /* SmokeTrack: Daily.storekit in Resources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		9A6F1BFE2E93391900D9DED3 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		9A6F1C0B2E93391A00D9DED3 /* Debug */ = {
+		9A6F1C0B2E93391A00D9DED3 /* Debug configuration for PBXProject "Examples" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -172,6 +164,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 2H5PN3F9B6;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -195,12 +188,13 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
-		9A6F1C0C2E93391A00D9DED3 /* Release */ = {
+		9A6F1C0C2E93391A00D9DED3 /* Release configuration for PBXProject "Examples" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -234,6 +228,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 2H5PN3F9B6;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -250,17 +245,19 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
 		};
-		9A6F1C0E2E93391A00D9DED3 /* Debug */ = {
+		9A6F1C0E2E93391A00D9DED3 /* Debug configuration for PBXNativeTarget "Examples" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 2H5PN3F9B6;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -298,13 +295,14 @@
 			};
 			name = Debug;
 		};
-		9A6F1C0F2E93391A00D9DED3 /* Release */ = {
+		9A6F1C0F2E93391A00D9DED3 /* Release configuration for PBXNativeTarget "Examples" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 2H5PN3F9B6;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -348,19 +346,17 @@
 		9A6F1BFD2E93391900D9DED3 /* Build configuration list for PBXProject "Examples" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				9A6F1C0B2E93391A00D9DED3 /* Debug */,
-				9A6F1C0C2E93391A00D9DED3 /* Release */,
+				9A6F1C0B2E93391A00D9DED3 /* Debug configuration for PBXProject "Examples" */,
+				9A6F1C0C2E93391A00D9DED3 /* Release configuration for PBXProject "Examples" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		9A6F1C0D2E93391A00D9DED3 /* Build configuration list for PBXNativeTarget "Examples" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				9A6F1C0E2E93391A00D9DED3 /* Debug */,
-				9A6F1C0F2E93391A00D9DED3 /* Release */,
+				9A6F1C0E2E93391A00D9DED3 /* Debug configuration for PBXNativeTarget "Examples" */,
+				9A6F1C0F2E93391A00D9DED3 /* Release configuration for PBXNativeTarget "Examples" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
@@ -368,7 +364,7 @@
 /* Begin XCLocalSwiftPackageReference section */
 		9A75A76C2E93396E00693893 /* XCLocalSwiftPackageReference ".." */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = "..";
+			relativePath = ..;
 		};
 /* End XCLocalSwiftPackageReference section */
 
