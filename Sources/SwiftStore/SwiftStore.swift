@@ -67,26 +67,40 @@ public final class SwiftStore {
     ///
     /// This URL is set through the configuration and can be used to
     /// display terms of service links in your app's UI.
+    /// Returns `nil` before `initialize(configuration:)` is called.
     public var termsURL: String? {
-        configuration.termsURL
+        configuration?.termsURL
     }
-    
+
     /// URL for the Privacy Policy page
     ///
     /// This URL is set through the configuration and can be used to
     /// display privacy policy links in your app's UI.
+    /// Returns `nil` before `initialize(configuration:)` is called.
     public var privacyURL: String? {
-        configuration.privacyURL
+        configuration?.privacyURL
     }
-    
+
+    /// Combined array of all configured product identifiers
+    ///
+    /// Returns an empty array before `initialize(configuration:)` is called.
     public var productIDs: [String] {
-        configuration.productIDs
+        configuration?.productIDs ?? []
     }
     
     // MARK: - Private Properties
     
     /// Internal configuration object containing product IDs and settings
-    private var configuration: SSConfiguration!
+    ///
+    /// `nil` until `initialize(configuration:)` is called; accessors return safe
+    /// defaults instead of crashing when the store has not been initialized.
+    private var configuration: SSConfiguration?
+
+    /// Whether `initialize(configuration:)` has already started its monitoring tasks
+    ///
+    /// `Transaction.updates` is an infinite sequence, so initialization must only
+    /// start it once even if `initialize` is called repeatedly.
+    private var isInitialized = false
     
     // MARK: - Initialization
     
@@ -104,6 +118,9 @@ public final class SwiftStore {
     ///
     /// This method must be called before using any other SwiftStore functionality.
     /// It sets up the configuration and starts monitoring for transaction updates.
+    /// Calling it again is safe: the configuration is refreshed, but the transaction
+    /// monitoring tasks are only started on the first call, so no duplicate
+    /// processing occurs.
     ///
     /// The initialization process includes:
     /// - Setting up the configuration with product IDs and URLs
@@ -127,14 +144,16 @@ public final class SwiftStore {
     @discardableResult
     public func initialize(configuration: SSConfiguration) -> SwiftStore {
         self.configuration = configuration
-        
+        guard !isInitialized else { return self }
+        isInitialized = true
+
         // Because the tasks below capture 'self' in their closures, this object must be fully initialized before this point.
         Task(priority: .background) {
             // Finish any unfinished transactions -- for example, if the app was terminated before finishing a transaction.
             for await verificationResult in Transaction.unfinished {
                 await handle(updatedTransaction: verificationResult)
             }
-            
+
             // Fetch current entitlements for all product types except consumables.
             for await verificationResult in Transaction.currentEntitlements {
                 await handle(updatedTransaction: verificationResult)
@@ -145,8 +164,8 @@ public final class SwiftStore {
                 await handle(updatedTransaction: verificationResult)
             }
         }
-        
-        
+
+
         return self
     }
     
@@ -156,58 +175,66 @@ public final class SwiftStore {
     ///
     /// This method processes StoreKit transaction verification results and updates
     /// the appropriate store properties based on the transaction type and status.
-    /// It handles three main scenarios:
+    /// It handles these scenarios:
     ///
-    /// 1. **Revoked Transactions**: Removes access when transactions are revoked
-    /// 2. **Expired Subscriptions**: Deactivates expired subscription access
-    /// 3. **Valid Transactions**: Activates lifetime purchases or subscriptions
+    /// 1. **Unverified Transactions**: Ignored entirely — no entitlement change and no
+    ///    finish call, so untrusted content is never acknowledged (secure default).
+    /// 2. **Revoked Transactions**: Removes access only to the product identified by
+    ///    `transaction.productID`; the transaction is finished whether or not the
+    ///    product is recognized, so it is not re-delivered on later launches.
+    /// 3. **Expired Subscriptions**: Deactivates the recorded subscription only when
+    ///    the expired transaction belongs to the product currently recorded as active.
+    /// 4. **Valid Transactions**: Activates lifetime purchases or subscriptions. Verified
+    ///    transactions for unrecognized products grant no entitlement but are still
+    ///    finished to prevent indefinite re-delivery.
     ///
-    /// The method only processes verified transactions and ignores unverified ones
-    /// for security reasons. All state changes are automatically reflected in the
-    /// UI through the `@Observable` protocol.
+    /// State changes are scoped to the transaction's own product: an expired or revoked
+    /// delivery can never clear another product's entitlement, so the final state does
+    /// not depend on transaction delivery order. All state changes are automatically
+    /// reflected in the UI through the `@Observable` protocol.
     ///
     /// - Parameter verificationResult: The StoreKit transaction verification result
     private func handle(updatedTransaction verificationResult: VerificationResult<Transaction>) async {
-        // The code below handles only verified transactions; handle unverified transactions based on your business model.
+        // Transactions that fail verification are intentionally ignored and not finished:
+        // their contents are untrusted and must not grant entitlements or be acknowledged.
         guard case .verified(let transaction) = verificationResult else { return }
-        
-        if let _ = transaction.revocationDate {
+
+        let productType = configuration?.getProductType(for: transaction.productID) ?? .none
+
+        if transaction.revocationDate != nil {
             // Remove access to the product identified by `transaction.productID`.
             // `Transaction.revocationReason` provides details about the revoked transaction.
-            //            guard let productID = ProductID(rawValue: transaction.productID) else {
-            guard configuration.productIDs.contains(transaction.productID) else {
-                print("Unexpected product: \(transaction.productID).")
-                return
-            }
-            let productType = configuration.getProductType(for: transaction.productID)
-            switch productType {
-                case .lifetime:
-                    activeLifeTime = false
-                case .subscription:
-                    // In an app that supports Family Sharing, there might be another entitlement that still provides access to the subscription.
-                    activeSubscription = nil
-                case .none:
-                    break
-            }
-            await transaction.finish()
-            return
-        } else if let expirationDate = transaction.expirationDate, expirationDate < Date() {
-            // In an app that supports Family Sharing, there might be another entitlement that still provides access to the subscription.
-            activeSubscription = nil
-            return
-        } else {
-            let productType = configuration.getProductType(for: transaction.productID)
-            switch productType {
-                case .lifetime:
-                    activeLifeTime = true
-                case .subscription:
-                    // In an app that supports Family Sharing, there might be another entitlement that already provides access to the subscription.
-                    activeSubscription = transaction.productID
-                case .none:
-                    break
+            if productType == .lifetime {
+                activeLifeTime = false
+            } else if productType == .subscription, activeSubscription == transaction.productID {
+                // In an app that supports Family Sharing, there might be another entitlement that still provides access to the subscription.
+                activeSubscription = nil
             }
             await transaction.finish()
             return
         }
+
+        if let expirationDate = transaction.expirationDate, expirationDate < Date() {
+            // Clear the recorded subscription only when the expired transaction is the
+            // one currently recorded as active; another product's expiry must not
+            // disable a still-valid subscription.
+            if productType == .subscription, activeSubscription == transaction.productID {
+                activeSubscription = nil
+            }
+            return
+        }
+
+        switch productType {
+            case .lifetime:
+                activeLifeTime = true
+            case .subscription:
+                activeSubscription = transaction.productID
+            case .none:
+                // A verified transaction for an unrecognized product grants no
+                // entitlement here, but is still finished so the store does not
+                // re-deliver it on every launch.
+                break
+        }
+        await transaction.finish()
     }
 }

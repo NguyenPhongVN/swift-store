@@ -1,15 +1,15 @@
 import SwiftUI
 
 /// A property wrapper that provides access to the SwiftStore shared instance within SwiftUI views.
-/// 
+///
 /// `SwiftStoreState` acts as a bridge between the `SwiftStore` singleton and SwiftUI's state management system.
-/// It provides a convenient way to access StoreKit transaction data, consumable counts, subscription status,
+/// It provides a convenient way to access premium status, active subscription state,
 /// and other in-app purchase related state within SwiftUI views.
 ///
 /// ## Features
 /// - **Property Wrapper**: Use with `@SwiftStoreState` to access store state in views
 /// - **Dynamic Member Lookup**: Access store properties directly without explicit property access
-/// - **Binding Support**: Provides two-way binding for mutable store properties
+/// - **Binding Support**: Provides a `Binding` to the underlying store instance via the projected value
 /// - **Main Actor Compliance**: Ensures UI updates happen on the main thread
 ///
 /// ## Usage Examples
@@ -18,11 +18,10 @@ import SwiftUI
 /// ```swift
 /// struct MyView: View {
 ///     @SwiftStoreState private var store
-///     
+///
 ///     var body: some View {
 ///         VStack {
-///             Text("Consumables: \(store.consumableCount)")
-///             Text("Premium Active: \(store.boughtNonConsumable ? "Yes" : "No")")
+///             Text("Premium Active: \(store.isPremium ? "Yes" : "No")")
 ///             if let subscription = store.activeSubscription {
 ///                 Text("Subscription: \(subscription)")
 ///             }
@@ -35,32 +34,34 @@ import SwiftUI
 /// ```swift
 /// struct MyView: View {
 ///     @SwiftStoreState private var store
-///     
+///
 ///     var body: some View {
 ///         // Direct property access through dynamic member lookup
 ///         VStack {
-///             Text("Count: \(consumableCount)")
-///             Text("Premium: \(boughtNonConsumable)")
+///             Text("Premium: \(isPremium)")
+///             Text("Products: \(productIDs.count)")
 ///         }
 ///     }
 /// }
 /// ```
 ///
-/// ### Two-Way Binding
+/// ### Projected Value
+/// The projected value (`$store`) is a `Binding<SwiftStore>` to the underlying
+/// store instance — useful when an API requires a binding to the store itself:
 /// ```swift
 /// struct SettingsView: View {
 ///     @SwiftStoreState private var store
-///     
+///
 ///     var body: some View {
-///         Toggle("Enable Premium", isOn: $boughtNonConsumable)
+///         StoreDetailsView($store)
 ///     }
 /// }
 /// ```
 ///
 /// ## Store Properties
 /// The wrapped `SwiftStore` instance provides access to:
-/// - `consumableCount: Int` - Number of consumable items purchased
-/// - `boughtNonConsumable: Bool` - Whether non-consumable items have been purchased
+/// - `isPremium: Bool` - Whether the user has premium access (lifetime or subscription)
+/// - `activeLifeTime: Bool` - Whether a lifetime purchase is active
 /// - `activeSubscription: String?` - Currently active subscription product ID
 @propertyWrapper
 @dynamicMemberLookup
@@ -76,27 +77,29 @@ public struct SwiftStoreState: DynamicProperty {
     }
     
     /// Returns the wrapped SwiftStore instance
-    /// 
-    /// This provides direct access to the SwiftStore singleton and all its properties
-    /// including consumable counts, subscription status, and purchase history.
+    ///
+    /// This provides direct access to the SwiftStore singleton and all its
+    /// properties including premium status, lifetime purchase state, and
+    /// subscription status.
     public var wrappedValue: SwiftStore {
         viewModel
     }
 
-    /// Returns a binding to the SwiftStore instance for two-way data binding
-    /// 
-    /// Use this when you need to create bindings for mutable properties in SwiftUI views.
-    /// This is particularly useful for toggles, text fields, and other controls that need
-    /// to modify store state.
+    /// Returns a binding to the SwiftStore instance
+    ///
+    /// The projected value is a `Binding<SwiftStore>` to the underlying store
+    /// instance, for APIs that require a binding to the store itself. To read or
+    /// write individual store properties, use the wrapped value or dynamic member
+    /// lookup instead.
     public var projectedValue: Binding<SwiftStore> {
         return $viewModel
     }
 
     /// Provides dynamic member lookup for read-only properties
-    /// 
+    ///
     /// This allows direct access to SwiftStore properties without explicitly accessing
-    /// the wrapped value. For example, `consumableCount` instead of `store.consumableCount`.
-    /// 
+    /// the wrapped value. For example, `isPremium` instead of `store.isPremium`.
+    ///
     /// - Parameter keyPath: A KeyPath to a property on SwiftStore
     /// - Returns: The value at the specified key path
     public subscript<U>(dynamicMember keyPath: KeyPath<SwiftStore, U>) -> U {

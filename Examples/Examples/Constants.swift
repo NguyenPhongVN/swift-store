@@ -34,6 +34,6 @@ enum Constants {
     static let privacyString = "https://github.com/revenuecat"
     
     static let termsURL = URL(string: termsString)!
-    static let privacyURL = URL(string: termsString)!
+    static let privacyURL = URL(string: privacyString)!
     
 }

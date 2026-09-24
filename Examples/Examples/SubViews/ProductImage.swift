@@ -39,13 +39,23 @@ struct ProductImage: View {
             "#FADBD8", // Rose
             "#E8DAEF"  // Lilac
         ]
-        
-        // Generate a deterministic index based on productId hash
-        let hash = productId.hashValue
-        let index = abs(hash) % hexColors.count
+
+        // Generate a deterministic index based on the product ID's stable hash.
+        let index = Int(fnv1aHash(productId) % UInt64(hexColors.count))
         let selectedHex = hexColors[index]
-        
+
         return Color(hex: selectedHex)
+    }
+
+    /// FNV-1a hash: stable across launches and processes, unlike `String.hashValue`,
+    /// which is seeded per process and would re-randomize the color on every launch.
+    private func fnv1aHash(_ string: String) -> UInt64 {
+        var hash: UInt64 = 0xcbf29ce484222325
+        for byte in string.utf8 {
+            hash ^= UInt64(byte)
+            hash = hash &* 0x100000001b3
+        }
+        return hash
     }
 }
 
