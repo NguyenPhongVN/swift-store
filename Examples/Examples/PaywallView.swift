@@ -1,10 +1,3 @@
-//
-//  PaywallView.swift
-//  Examples
-//
-//  Created by Computer on 10/6/25.
-//
-
 import StoreKit
 import SwiftUI
 import SwiftStore

@@ -7,8 +7,26 @@ public enum ProductType {
     /// Recurring subscription product
     case subscription
     /// Product not found or unrecognized
+    ///
+    /// - Deprecated: Use `ProductClassification.unrecognized` instead. The case
+    /// remains functional; writable access patterns are unchanged and it will
+    /// only be removed in a future major version.
+    @available(*, deprecated, message: "Use ProductClassification.unrecognized instead.")
     case none
 }
+
+/// The explicit classification of a product identifier against a configuration.
+public enum ProductClassification: Sendable, Equatable {
+    /// Recurring subscription product.
+    case subscription
+    /// One-time purchase product.
+    case lifetime
+    /// Identifier not present in the configuration.
+    case unrecognized
+}
+
+/// A friendlier alias for `SSConfiguration`.
+public typealias StoreConfiguration = SSConfiguration
 
 /// Configuration class for SwiftStore in-app purchase management
 @Observable
@@ -78,6 +96,44 @@ public class SSConfiguration {
         self.lifetimeIDs = ids
         return self
     }
+
+    /**
+     * Set subscription product IDs using type-safe identifiers.
+     *
+     * Identifiers are stored as strings, so behavior is identical to
+     * `setSubscriptionIDs(_:)`; the distinct name keeps existing string-literal
+     * call sites unambiguous.
+     *
+     * ## Parameters:
+     * - `ids`: Array of subscription product identifiers
+     *
+     * ## Returns:
+     * Self for method chaining
+     */
+    @discardableResult
+    public func setSubscriptionProductIDs(_ ids: [ProductID]) -> Self {
+        self.subscriptionIDs = ids.map(\.rawValue)
+        return self
+    }
+
+    /**
+     * Set lifetime product IDs using type-safe identifiers.
+     *
+     * Identifiers are stored as strings, so behavior is identical to
+     * `setLifetimeIDs(_:)`; the distinct name keeps existing string-literal
+     * call sites unambiguous.
+     *
+     * ## Parameters:
+     * - `ids`: Array of lifetime product identifiers
+     *
+     * ## Returns:
+     * Self for method chaining
+     */
+    @discardableResult
+    public func setLifetimeProductIDs(_ ids: [ProductID]) -> Self {
+        self.lifetimeIDs = ids.map(\.rawValue)
+        return self
+    }
     
     /**
      * Set Terms of Service URL
@@ -123,17 +179,27 @@ public class SSConfiguration {
     var productIDs: [String] {
         subscriptionIDs + lifetimeIDs
     }
-    
-    /// Determines the product type for a given product identifier
+
+    /// Determines the classification for a given product identifier
+    ///
+    /// Subscription identifiers take precedence over lifetime identifiers when
+    /// an identifier appears in both lists.
     /// - Parameter id: The product identifier to check
-    /// - Returns: The type of product (lifetime, subscription, or none)
-    func getProductType(for id: String) -> ProductType {
+    /// - Returns: The explicit classification (subscription, lifetime, or unrecognized)
+    public func classify(_ id: String) -> ProductClassification {
         if subscriptionIDs.contains(id) {
             return .subscription
         } else if lifetimeIDs.contains(id) {
             return .lifetime
         } else {
-            return .none
+            return .unrecognized
         }
+    }
+
+    /// `ProductID` overload of `classify(_:)`.
+    /// - Parameter id: The product identifier to check
+    /// - Returns: The explicit classification (subscription, lifetime, or unrecognized)
+    public func classify(_ id: ProductID) -> ProductClassification {
+        classify(id.rawValue)
     }
 }

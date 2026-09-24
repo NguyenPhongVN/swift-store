@@ -107,12 +107,15 @@ public struct SwiftStoreState: DynamicProperty {
     }
 
     /// Provides dynamic member lookup for writable properties with two-way binding support
-    /// 
-    /// This allows both reading and writing to SwiftStore properties through dynamic member lookup.
-    /// Changes made through this subscript will automatically trigger UI updates.
-    /// 
+    ///
+    /// - Warning: Entitlement state is managed by the store engine and should be
+    /// treated as read-only by app code. Writing entitlements through this
+    /// subscript is deprecated; use the read pathways (wrapped value or the
+    /// read-only dynamic member subscript) instead.
+    ///
     /// - Parameter keyPath: A WritableKeyPath to a mutable property on SwiftStore
     /// - Returns: A getter/setter pair for the property at the specified key path
+    @available(*, deprecated, message: "Entitlement state is managed by the store and is read-only. Use wrappedValue / dynamic member lookup to read. Writable access will be removed in a future major version.")
     public subscript<U>(dynamicMember keyPath: WritableKeyPath<SwiftStore, U>) -> U {
         get { return viewModel[keyPath: keyPath] }
         set { viewModel[keyPath: keyPath] = newValue }
