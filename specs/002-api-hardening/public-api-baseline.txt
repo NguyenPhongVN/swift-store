@@ -1,0 +1,26 @@
+105:    public subscript<U>(dynamicMember keyPath: KeyPath<SwiftStore, U>) -> U {
+116:    public subscript<U>(dynamicMember keyPath: WritableKeyPath<SwiftStore, U>) -> U {
+117:    public func setPrivacyURL(_ url: String?) -> Self {
+145:    public func initialize(configuration: SSConfiguration) -> SwiftStore {
+15:public class SSConfiguration {
+20:    public var subscriptionIDs: [String] = []
+23:    public var lifetimeIDs: [String] = []
+26:    public var termsURL: String?
+29:    public var privacyURL: String?
+34:public final class SwiftStore {
+36:    public init() {
+42:    public static let shared = SwiftStore()
+48:    public var activeLifeTime: Bool = false
+4:public enum ProductType {
+55:    public var activeSubscription: String? = nil
+57:    public func setSubscriptionIDs(_ ids: [String]) -> Self {
+62:    public var isPremium: Bool {
+69:public struct SwiftStoreState: DynamicProperty {
+71:    public var termsURL: String? {
+75:    public init(_ viewModel: SwiftStore = .shared) {
+77:    public func setLifetimeIDs(_ ids: [String]) -> Self {
+80:    public var privacyURL: String? {
+84:    public var wrappedValue: SwiftStore {
+87:    public var productIDs: [String] {
+94:    public var projectedValue: Binding<SwiftStore> {
+97:    public func setTermsURL(_ url: String?) -> Self {
