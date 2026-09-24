@@ -1,0 +1,46 @@
+103:    public var termsLink: URL? {
+105:    public subscript<U>(dynamicMember keyPath: KeyPath<SwiftStore, U>) -> U {
+112:    public var privacyLink: URL? {
+114:    public func setSubscriptionProductIDs(_ ids: [ProductID]) -> Self {
+119:    public subscript<U>(dynamicMember keyPath: WritableKeyPath<SwiftStore, U>) -> U {
+11:public enum StoreEvent: Sendable, Equatable {
+120:    public var productIDs: [String] {
+129:    public var onEvent: ((StoreEvent) -> Void)?
+12:public struct ProductID: Hashable, Sendable, ExpressibleByStringLiteral {
+133:    public func setLifetimeProductIDs(_ ids: [ProductID]) -> Self {
+135:    public var isInitialized: Bool {
+153:    public func setTermsURL(_ url: String?) -> Self {
+15:    public let rawValue: String
+163:    public init() {
+169:    public static func make() -> SwiftStore {
+173:    public func setPrivacyURL(_ url: String?) -> Self {
+189:    public func classify(_ id: String) -> ProductClassification {
+18:    public init(_ rawValue: String) {
+19:public enum ProductClassification: Sendable, Equatable {
+202:    public func classify(_ id: ProductID) -> ProductClassification {
+203:    public func initialize(configuration: SSConfiguration) -> SwiftStore {
+235:    public func hasEntitlement(_ id: ProductID) -> Bool {
+23:    public init(stringLiteral value: String) {
+248:    public func restorePurchases() async {
+262:    public func showManageSubscriptions(in scene: UIWindowScene) {
+29:public typealias StoreConfiguration = SSConfiguration
+33:public class SSConfiguration {
+38:    public var subscriptionIDs: [String] = []
+41:    public var lifetimeIDs: [String] = []
+44:    public var termsURL: String?
+47:    public var privacyURL: String?
+49:public final class SwiftStore {
+4:public enum ProductType {
+54:    public init() {
+57:    public static let shared = SwiftStore()
+63:    public var activeLifeTime: Bool = false
+69:public struct SwiftStoreState: DynamicProperty {
+70:    public var activeSubscription: String? = nil
+75:    public func setSubscriptionIDs(_ ids: [String]) -> Self {
+75:    public init(_ viewModel: SwiftStore = .shared) {
+77:    public var isPremium: Bool {
+84:    public var wrappedValue: SwiftStore {
+86:    public var termsURL: String? {
+94:    public var projectedValue: Binding<SwiftStore> {
+95:    public func setLifetimeIDs(_ ids: [String]) -> Self {
+95:    public var privacyURL: String? {
