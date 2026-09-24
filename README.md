@@ -1,51 +1,47 @@
 # SwiftStore
 
-A modern, SwiftUI-friendly StoreKit wrapper for iOS in-app purchases. SwiftStore simplifies the integration of subscriptions, lifetime purchases, and consumable products in your iOS applications.
+A modern, SwiftUI-friendly StoreKit 2 wrapper for iOS and macOS in-app purchases. SwiftStore handles transaction verification, entitlement management, and state updates for **subscription and lifetime (non-consumable) products** — with an observable event stream, standalone test instances, and type-safe product identifiers.
+
+> Consumable products are not managed by this library.
 
 ## Features
 
-- 🚀 **Easy Setup**: Simple configuration with product IDs and URLs
+- 🚀 **Easy Setup**: Closure-based configuration, safe to use with strict concurrency checking
 - 📱 **SwiftUI Integration**: Built-in `@SwiftStoreState` property wrapper
-- 🔄 **Automatic Transaction Handling**: Handles unfinished and current entitlements
-- 💰 **Multiple Product Types**: Support for subscriptions, lifetime purchases, and consumables
-- 🛡️ **Transaction Verification**: Built-in StoreKit transaction verification
-- ⚡ **Observable**: Uses Swift's Observation framework for reactive updates
+- 🔄 **Single Transaction Pipeline**: Platform transactions verified, completed, and fanned out to every store instance exactly once per process
+- 💰 **Product Types**: Subscription and lifetime (non-consumable) products
+- 🛡️ **Transaction Verification**: Unverified transactions are ignored — never trusted, never acknowledged
+- 🩹 **Grace Period Aware**: Subscriptions in the platform's billing grace period / retry keep access
+- 📡 **Observable Events**: `onEvent` reports entitlement changes, purchases, verification failures, and restores
+- 🧪 **Standalone Instances**: `make()` / `init()` for tests, previews, and isolated environments
+- ⚡ **Observable State**: Uses Swift's Observation framework for reactive SwiftUI updates
 
 ## Requirements
 
-- iOS 17.0+
-- Swift 6.2+
-- Xcode 15.0+
+- iOS 17+ / macOS 14+
+- Swift 6.2 toolchain (Xcode 26+)
 
 ## Installation
 
 ### Swift Package Manager
 
-Add SwiftStore to your project using Swift Package Manager:
+1. In Xcode, go to **File** → **Add Package Dependencies…**
+2. Enter the repository URL: `https://github.com/NguyenPhongVN/swift-store`
+3. Select a version (dependency rule: *Up to Next Major from 1.0.0*) and add the **SwiftStore** product to your target
 
-1. In Xcode, go to **File** → **Add Package Dependencies**
-2. Enter the repository URL: `https://github.com/your-username/swift-store`
-3. Select the version and add to your target
+Or in your `Package.swift`:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/NguyenPhongVN/swift-store", from: "1.0.0")
+]
+```
 
 ## Quick Start
 
-### 1. Configure Your Products
+### 1. Initialize the Store
 
-First, create a configuration with your App Store Connect product IDs:
-
-```swift
-import SwiftStore
-
-let configuration = SSConfiguration()
-configuration.subscriptionIDs = ["monthly_premium", "yearly_premium"]
-configuration.lifetimeIDs = ["lifetime_premium"]
-configuration.termsURL = "https://yourapp.com/terms"
-configuration.privacyURL = "https://yourapp.com/privacy"
-```
-
-### 2. Initialize SwiftStore
-
-Initialize SwiftStore in your app's entry point:
+Initialize in your app's entry point. The closure runs on the main actor, so this is safe with strict concurrency checking:
 
 ```swift
 import SwiftUI
@@ -54,15 +50,14 @@ import SwiftStore
 @main
 struct MyApp: App {
     init() {
-        let configuration = SSConfiguration()
-        configuration.subscriptionIDs = ["monthly_premium", "yearly_premium"]
-        configuration.lifetimeIDs = ["lifetime_premium"]
-        configuration.termsURL = "https://yourapp.com/terms"
-        configuration.privacyURL = "https://yourapp.com/privacy"
-        
-        SwiftStore.shared.initialize(configuration: configuration)
+        SwiftStore.shared.initialize {
+            $0.setSubscriptionIDs(["monthly_premium", "yearly_premium"])
+            $0.setLifetimeIDs(["lifetime_premium"])
+            $0.setTermsURL("https://yourapp.com/terms")
+            $0.setPrivacyURL("https://yourapp.com/privacy")
+        }
     }
-    
+
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -71,9 +66,18 @@ struct MyApp: App {
 }
 ```
 
-### 3. Use in SwiftUI Views
+If you prefer an explicit configuration object, the classic variant works the same way:
 
-Use the `@SwiftStoreState` property wrapper to access store state:
+```swift
+let configuration = SSConfiguration()
+configuration.subscriptionIDs = ["monthly_premium"]
+configuration.lifetimeIDs = ["lifetime_premium"]
+SwiftStore.shared.initialize(configuration: configuration)
+```
+
+### 2. Use It in SwiftUI Views
+
+Use the `@SwiftStoreState` property wrapper for reactive state:
 
 ```swift
 import SwiftUI
@@ -81,234 +85,48 @@ import SwiftStore
 
 struct ContentView: View {
     @SwiftStoreState private var store
-    
+
     var body: some View {
         VStack(spacing: 20) {
-            // Check premium status
             if store.isPremium {
                 Text("🎉 Premium Active!")
-                    .font(.title)
-                    .foregroundColor(.green)
+                if let subscription = store.activeSubscription {
+                    Text("Active Subscription: \(subscription)")
+                }
+                if store.activeLifeTime {
+                    Text("Lifetime Premium Active")
+                }
             } else {
                 Text("Upgrade to Premium")
-                    .font(.title)
-                    .foregroundColor(.blue)
             }
-            
-            // Show active subscription
-            if let subscription = store.activeSubscription {
-                Text("Active Subscription: \(subscription)")
-            }
-            
-            // Show lifetime status
-            if store.activeLifeTime {
-                Text("Lifetime Premium Active")
-            }
-            
-            // Purchase buttons
-            Button("Purchase Lifetime") {
-                // Handle lifetime purchase
-            }
-            .disabled(store.activeLifeTime)
-            
-            Button("Subscribe Monthly") {
-                // Handle subscription purchase
-            }
-            .disabled(store.activeSubscription != nil)
         }
         .padding()
     }
 }
 ```
 
-## API Reference
+### 3. Sell Something
 
-### SSConfiguration
-
-Configuration class for setting up your in-app purchase products.
+Purchases happen through the platform's StoreKit views, which report purchase progress (including Ask to Buy `.pending`) through their own callbacks:
 
 ```swift
-public class SSConfiguration {
-    /// Array of subscription product IDs from App Store Connect
-    public var subscriptionIDs: [String] = []
-    
-    /// Array of lifetime product IDs from App Store Connect
-    public var lifetimeIDs: [String] = []
-    
-    /// URL for Terms of Service page
-    public var termsURL: String?
-    
-    /// URL for Privacy Policy page
-    public var privacyURL: String?
-}
-```
+import SwiftUI
+import StoreKit
 
-### SwiftStore
-
-Main store class that handles all in-app purchase operations.
-
-```swift
-public final class SwiftStore {
-    /// Shared singleton instance
-    static let shared = SwiftStore()
-    
-    /// Whether lifetime purchase is active
-    public var activeLifeTime: Bool
-    
-    /// Currently active subscription product ID
-    public var activeSubscription: String?
-    
-    /// Whether user has premium access (lifetime or subscription)
-    public var isPremium: Bool
-    
-    /// Terms of Service URL
-    public var termsURL: String?
-    
-    /// Privacy Policy URL
-    public var privacyURL: String?
-    
-    /// Initialize the store with configuration
-    public func initialize(configuration: SSConfiguration) -> SwiftStore
-}
-```
-
-### SwiftStoreState
-
-Property wrapper for SwiftUI integration.
-
-```swift
-@propertyWrapper
-struct SwiftStoreState: DynamicProperty {
-    /// Access to the SwiftStore instance
-    var wrappedValue: SwiftStore
-    
-    /// Binding for two-way data binding
-    var projectedValue: Binding<SwiftStore>
-}
-```
-
-### ProductType
-
-Enum representing different product types.
-
-```swift
-public enum ProductType {
-    case lifetime    // One-time purchase
-    case subscription // Recurring subscription
-    case none        // Product not found
-}
-```
-
-## Usage Examples
-
-### Basic Premium Check
-
-```swift
-struct PremiumView: View {
-    @SwiftStoreState private var store
-    
+struct Paywall: View {
     var body: some View {
-        if store.isPremium {
-            PremiumContentView()
-        } else {
-            UpgradePromptView()
+        SubscriptionStoreView(groupID: "YOUR_SUBSCRIPTION_GROUP_ID") {
+            Text("Unlock Premium")
         }
     }
 }
 ```
 
-### Subscription Management
+Once a purchase is approved, SwiftStore processes the transaction automatically and premium state updates.
 
-```swift
-struct SubscriptionView: View {
-    @SwiftStoreState private var store
-    
-    var body: some View {
-        VStack {
-            if let activeSubscription = store.activeSubscription {
-                Text("Active: \(activeSubscription)")
-                Button("Manage Subscription") {
-                    // Open subscription management
-                }
-            } else {
-                Button("Subscribe Now") {
-                    // Start subscription flow
-                }
-            }
-        }
-    }
-}
-```
+## Observability
 
-### Terms and Privacy Links
-
-```swift
-struct SettingsView: View {
-    @SwiftStoreState private var store
-    
-    var body: some View {
-        List {
-            if let termsURL = store.termsURL {
-                Link("Terms of Service", destination: URL(string: termsURL)!)
-            }
-            
-            if let privacyURL = store.privacyURL {
-                Link("Privacy Policy", destination: URL(string: privacyURL)!)
-            }
-        }
-    }
-}
-```
-
-### Dynamic Member Lookup
-
-The `@SwiftStoreState` property wrapper supports dynamic member lookup, allowing you to access properties directly:
-
-```swift
-struct MyView: View {
-    @SwiftStoreState private var store
-    
-    var body: some View {
-        VStack {
-            // Direct property access
-            Text("Premium: \(isPremium)")
-            Text("Lifetime: \(activeLifeTime)")
-            
-            if let subscription = activeSubscription {
-                Text("Subscription: \(subscription)")
-            }
-        }
-    }
-}
-```
-
-## Advanced Usage
-
-### Custom Purchase Handling
-
-While SwiftStore handles transaction verification automatically, you can extend it for custom purchase flows:
-
-```swift
-extension SwiftStore {
-    func purchaseProduct(_ productID: String) async throws {
-        // Your custom purchase logic here
-        // SwiftStore will automatically handle the transaction verification
-    }
-}
-```
-
-### Monitoring Transaction Updates
-
-SwiftStore automatically monitors transaction updates and updates the state accordingly. The store will:
-
-- Handle unfinished transactions on app launch
-- Process current entitlements
-- Monitor for new transaction updates
-- Update premium status automatically
-
-### Observability & Purchases Pending Approval (Ask to Buy)
-
-Subscribe to store events to observe what the pipeline processes — entitlement changes, first purchases, transactions that failed verification, and restore completion:
+Subscribe to the event stream for analytics, logging, or UI hints:
 
 ```swift
 SwiftStore.shared.onEvent = { event in
@@ -325,13 +143,12 @@ SwiftStore.shared.onEvent = { event in
 }
 ```
 
-**Ask to Buy**: when a purchase is awaiting approval, the platform surfaces `.pending` through its purchase-time callbacks (for example `onInAppPurchaseResult` on `ProductView`, or the `purchase` environment action). Once the purchase is approved, the transaction arrives through SwiftStore's normal pipeline and is reported as a `purchaseFinished` event. The library intentionally exposes no pre-approval query — the platform does not provide one.
+Events are delivered on the main actor in occurrence order. Unverified transactions change no state; unrecognized verified products are completed but grant nothing.
 
-### Restoring Purchases
+## Restoring Purchases
 
 ```swift
-// Distinguishable outcome: success (with entitlement count), empty account,
-// or failure (throws, for example when offline).
+// Distinguishable outcome; throws on failure (for example, offline).
 let outcome = try await SwiftStore.shared.restore()
 switch outcome {
 case .restored(let count):
@@ -340,40 +157,129 @@ case .nothingToRestore:
     print("Nothing to restore")
 }
 
-// Legacy call: unchanged behavior, reports via the .restoreFinished event only.
+// Legacy variant: reports via the .restoreFinished event only, never throws.
 await SwiftStore.shared.restorePurchases()
 ```
 
-## Best Practices
+## Standalone Instances (Tests & Previews)
 
-1. **Initialize Early**: Initialize SwiftStore in your app's entry point before any views are created
-2. **Use Property Wrapper**: Always use `@SwiftStoreState` in SwiftUI views for reactive updates
-3. **Handle Loading States**: Consider showing loading states while transactions are being processed
-4. **Test Thoroughly**: Test with StoreKit's sandbox environment before releasing
-5. **Handle Edge Cases**: Consider what happens when network is unavailable or transactions fail
+Most apps use `shared`. For tests, previews, or isolated environments, create independent instances — each keeps its own configuration, state, and event slot, while platform monitoring still runs once per process:
 
-## Troubleshooting
+```swift
+let store = SwiftStore.make()
+print(store.isInitialized) // false — safe defaults until initialized
+store.initialize {
+    $0.setLifetimeProductIDs([ProductID("lifetime_premium")])
+}
+```
 
-### Common Issues
+## Behavior Guarantees
 
-1. **Products Not Loading**: Ensure your product IDs match exactly with App Store Connect
-2. **Transactions Not Completing**: Check that you're testing with sandbox accounts
-3. **State Not Updating**: Make sure you're using `@SwiftStoreState` in SwiftUI views
+- **Single pipeline**: monitoring runs once per process; outcomes are applied once per initialized instance.
+- **Product-scoped clearing**: one product's expiry or revocation never clears another product's entitlement.
+- **Grace retention**: a subscription inside the platform's billing grace period (or billing retry) keeps access; access is removed only on true lapse.
+- **Hygiene**: verified transactions are completed exactly once; unverified ones are ignored and never finished.
+- **Type safety**: `ProductID` and `classify(_:)` avoid raw-string mistakes; `termsLink`/`privacyLink` give validated `URL?` accessors (no force-unwrapping).
 
-### Debug Tips
+## API Overview
 
-- Enable StoreKit testing in Xcode's scheme settings
-- Use sandbox test accounts for testing
-- Check the console for transaction verification logs
+### SwiftStore
+
+```swift
+public final class SwiftStore {
+    public static let shared: SwiftStore
+    public static func make() -> SwiftStore
+
+    public var activeLifeTime: Bool         // managed by the store — writing deprecated
+    public var activeSubscription: String?  // managed by the store — writing deprecated
+    public var isPremium: Bool { get }
+
+    public var termsURL: String?
+    public var privacyURL: String?
+    public var termsLink: URL?              // validated (nil when unset/malformed)
+    public var privacyLink: URL?
+    public var productIDs: [String]
+    public var onEvent: ((StoreEvent) -> Void)?
+    public var isInitialized: Bool
+
+    public func initialize(_ configure: (SSConfiguration) -> Void) -> SwiftStore
+    public func initialize(configuration: SSConfiguration) -> SwiftStore
+    public func hasEntitlement(_ id: ProductID) -> Bool
+    public func restore() async throws -> RestoreOutcome
+    public func restorePurchases() async
+    public func showManageSubscriptions(in scene: UIWindowScene)  // iOS only
+}
+```
+
+### Configuration
+
+```swift
+public class SSConfiguration {          // typealias StoreConfiguration
+    public init()
+    public var subscriptionIDs: [String]
+    public var lifetimeIDs: [String]
+    public var termsURL: String?
+    public var privacyURL: String?
+
+    public func setSubscriptionIDs(_ ids: [String]) -> Self
+    public func setLifetimeIDs(_ ids: [String]) -> Self
+    public func setSubscriptionProductIDs(_ ids: [ProductID]) -> Self
+    public func setLifetimeProductIDs(_ ids: [ProductID]) -> Self
+    public func setTermsURL(_ url: String?) -> Self
+    public func setPrivacyURL(_ url: String?) -> Self
+    public func classify(_ id: String) -> ProductClassification
+    public func classify(_ id: ProductID) -> ProductClassification
+}
+```
+
+### Supporting Types
+
+```swift
+public enum StoreEvent: Sendable, Equatable {
+    case entitlementChanged(productID: String, isActive: Bool)
+    case purchaseFinished(productID: String)
+    case transactionUnverified
+    case restoreFinished
+}
+
+public struct ProductID: Hashable, Sendable, ExpressibleByStringLiteral {
+    public let rawValue: String
+}
+
+public enum RestoreOutcome: Sendable, Equatable {
+    case restored(count: Int)
+    case nothingToRestore
+}
+
+public enum ProductClassification: Sendable, Equatable {
+    case lifetime, subscription, unrecognized
+}
+
+public enum ProductType {              // legacy — kept for compatibility
+    case lifetime, subscription
+    @available(*, deprecated, message: "Use ProductClassification.unrecognized instead.")
+    case none
+}
+```
+
+### SwiftStoreState
+
+```swift
+@propertyWrapper
+public struct SwiftStoreState: DynamicProperty {
+    public init(_ viewModel: SwiftStore = .shared)
+    public var wrappedValue: SwiftStore        // read store state
+    public var projectedValue: Binding<SwiftStore>
+}
+```
+
+> ⚠️ **Deprecated**: assigning entitlement state through `@SwiftStoreState` dynamic member lookup (for example `store.activeLifeTime = true`) is deprecated — entitlement state is managed by the store and treated as read-only. Writable access will be removed in a future major version.
+
+## Documentation
+
+- Full release history: [CHANGELOG.md](CHANGELOG.md)
+- In-code documentation: ⌥-click any symbol in Xcode for Quick Help
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Support
-
-If you encounter any issues or have questions, please open an issue on GitHub.
+This project is licensed under the MIT License — see [LICENSE](LICENSE) for details.
